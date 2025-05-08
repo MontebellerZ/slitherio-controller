@@ -21,9 +21,6 @@ class SlitherControllerApp:
         
         # Verifica se há controles conectados
         self.joystick = None
-        if pygame.joystick.get_count() > 0:
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
         
         # Cria a interface
         self.create_main_interface()
@@ -129,6 +126,11 @@ Instruções:
             self.stop_controller()
     
     def start_controller(self):
+        # Verifica se há controles conectados
+        if pygame.joystick.get_count() > 0:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+
         if self.joystick is None:
             messagebox.showerror("Erro", "Nenhum controle Xbox encontrado!")
             return
