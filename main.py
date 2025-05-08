@@ -1,114 +1,209 @@
 import pygame
 import pyautogui
 import time
-import sys
 import math
+import tkinter as tk
+from tkinter import ttk, messagebox
 
-# Inicializa o pygame para leitura do controle
-pygame.init()
-pygame.joystick.init()
+class SlitherControllerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Slither.io Controller")
+        self.root.geometry("300x150")
+        self.root.resizable(False, False)
+        
+        # Variáveis de controle
+        self.running = False
+        self.controller_active = False
+        
+        # Inicializa pygame
+        pygame.init()
+        pygame.joystick.init()
+        
+        # Verifica se há controles conectados
+        self.joystick = None
+        if pygame.joystick.get_count() > 0:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+        
+        # Cria a interface
+        self.create_main_interface()
+        
+        # Configurações
+        self.DEADZONE = 0.2
+        self.RADIUS = 50
+        self.UPDATE_INTERVAL = 0.01
+        
+        # Mapeamento de botões
+        self.BUTTON_A = 0
+        self.BUTTON_RB = 5
+        self.BUTTON_START = 7
+        self.AXIS_RT = 5
+        
+        # Variáveis de estado
+        self.prev_r2_pressed = False
+        self.prev_a_pressed = False
+        
+        # Centraliza o mouse inicialmente
+        self.screen_width, self.screen_height = pyautogui.size()
+        self.center_x = self.screen_width // 2
+        self.center_y = self.screen_height // 2
+        pyautogui.moveTo(self.center_x, self.center_y)
+        
+        # Inicia o loop principal
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.root.mainloop()
+    
+    def create_main_interface(self):
+        # Frame principal
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Botão Iniciar/Parar
+        self.start_button = ttk.Button(
+            main_frame, 
+            text="Iniciar", 
+            command=self.toggle_controller,
+            width=15
+        )
+        self.start_button.pack(pady=10)
+        
+        # Botão Controles (alterado de "Comandos")
+        self.commands_button = ttk.Button(
+            main_frame,
+            text="Controles",
+            command=self.show_commands,
+            width=15
+        )
+        self.commands_button.pack(pady=10)
+        
+        # Status
+        self.status_label = ttk.Label(
+            main_frame,
+            text="Pronto para iniciar",
+            foreground="gray"
+        )
+        self.status_label.pack(pady=5)
+    
+    def create_commands_window(self):
+        self.commands_window = tk.Toplevel(self.root)
+        self.commands_window.title("Controles do Slither.io")  # Nome alterado
+        self.commands_window.geometry("450x250")  # Altura aumentada para 300
+        
+        commands_text = """Controles do Xbox para Slither.io:
 
-# Configurações
-DEADZONE = 0.2  # Zona morta para evitar drift do analógico
-RADIUS = 50  # Raio da circunferência em pixels
-UPDATE_INTERVAL = 0.001  # Intervalo de atualização em segundos
+- L3 (Analógico Esquerdo): Controla a direção da cobrinha
+- RB, RT e Botão A: Aceleram a cobrinha
+- Botão START: Para a captação dos controles
 
-# Mapeamento de botões do controle Xbox
-BUTTON_A = 0
-BUTTON_RB = 5
-BUTTON_START = 7
-AXIS_RT = 5
-
-try:
-    # Verifica se há controles conectados
-    if pygame.joystick.get_count() == 0:
-        print("Nenhum controle encontrado. Conecte um controle Xbox e tente novamente.")
-        sys.exit()
-    
-    # Inicializa o primeiro controle encontrado
-    joystick = pygame.joystick.Joystick(0)
-    joystick.init()
-    
-    print(f"Controle conectado: {joystick.get_name()}")
-    print("Pressione o botão START (Menu) para encerrar o programa.")
-    print(f"Mouse limitado a uma circunferência de {RADIUS}px ao redor do centro da tela.")
-    
-    # Obtém as dimensões da tela
-    screen_width, screen_height = pyautogui.size()
-    center_x = screen_width // 2
-    center_y = screen_height // 2
-    
-    # Move o mouse para o centro inicialmente
-    pyautogui.moveTo(center_x, center_y)
-    
-    # Variáveis de estado
-    prev_r2_pressed = False
-    prev_r1_pressed = False
-    prev_a_pressed = False
-    
-    running = True
-    while running:
-        pygame.event.pump()
+Instruções:
+1. Clique em INICIAR ou pressione START no controle
+2. Use o analógico para controlar a direção
+3. Use RB/RT/A para acelerar
+4. Pressione START novamente para parar"""
         
-        # Verifica se o botão START (Menu) foi pressionado para sair
-        if joystick.get_button(BUTTON_START):
-            running = False
+        commands_label = ttk.Label(
+            self.commands_window,
+            text=commands_text,
+            justify=tk.LEFT,
+            padding=10,
+            font=('Arial', 10)
+        )
+        commands_label.pack(fill=tk.BOTH, expand=True)
         
-        # Obtém os eixos do analógico esquerdo (L3)
-        axis_x = joystick.get_axis(0)
-        axis_y = joystick.get_axis(1)
+        close_button = ttk.Button(
+            self.commands_window,
+            text="Fechar",
+            command=self.commands_window.destroy
+        )
+        close_button.pack(pady=5)
         
-        # Aplica deadzone
-        if abs(axis_x) < DEADZONE and abs(axis_y) < DEADZONE:
-            axis_x = 0
-            axis_y = 0
+        self.commands_window.protocol("WM_DELETE_WINDOW", self.commands_window.destroy)
+    
+    def show_commands(self):
+        if not self.running:
+            self.create_commands_window()
+    
+    def toggle_controller(self):
+        if not self.controller_active:
+            self.start_controller()
+        else:
+            self.stop_controller()
+    
+    def start_controller(self):
+        if self.joystick is None:
+            messagebox.showerror("Erro", "Nenhum controle Xbox encontrado!")
+            return
         
-        # Se o analógico está sendo movido
-        if axis_x != 0 or axis_y != 0:
-            # Calcula o ângulo da direção do analógico
-            angle = math.atan2(axis_y, axis_x)
+        self.controller_active = True
+        self.start_button.config(text="Parar")
+        self.commands_button.config(state=tk.DISABLED)
+        self.status_label.config(text="Captando controles...", foreground="green")
+        self.running = True
+        self.controller_loop()
+    
+    def stop_controller(self):
+        self.controller_active = False
+        self.running = False
+        self.start_button.config(text="Iniciar")
+        self.commands_button.config(state=tk.NORMAL)
+        self.status_label.config(text="Pronto para iniciar", foreground="gray")
+        pyautogui.keyUp('space')  # Garante que a tecla space seja liberada
+    
+    def controller_loop(self):
+        if not self.running:
+            return
+        
+        try:
+            pygame.event.pump()
             
-            # Calcula a posição na circunferência
-            mouse_x = center_x + RADIUS * math.cos(angle)
-            mouse_y = center_y + RADIUS * math.sin(angle)
+            # Verifica se o botão START foi pressionado
+            if self.joystick.get_button(self.BUTTON_START):
+                self.stop_controller()
+                return
             
-            # Move o mouse para a posição calculada
-            pyautogui.moveTo(mouse_x, mouse_y)
+            # Movimento do mouse
+            axis_x = self.joystick.get_axis(0)
+            axis_y = self.joystick.get_axis(1)
+            
+            if abs(axis_x) < self.DEADZONE and abs(axis_y) < self.DEADZONE:
+                axis_x = 0
+                axis_y = 0
+            
+            if axis_x != 0 or axis_y != 0:
+                angle = math.atan2(axis_y, axis_x)
+                mouse_x = self.center_x + self.RADIUS * math.cos(angle)
+                mouse_y = self.center_y + self.RADIUS * math.sin(angle)
+                pyautogui.moveTo(mouse_x, mouse_y)
+            
+            # Botões para espaço
+            r2_value = self.joystick.get_axis(self.AXIS_RT)
+            r2_pressed = r2_value > 0.5
+            a_pressed = self.joystick.get_button(self.BUTTON_A)
+            rb_pressed = self.joystick.get_button(self.BUTTON_RB)
+            
+            if (r2_pressed or a_pressed or rb_pressed) and not (self.prev_r2_pressed or self.prev_a_pressed):
+                pyautogui.keyDown('space')
+            elif not (r2_pressed or a_pressed or rb_pressed) and (self.prev_r2_pressed or self.prev_a_pressed):
+                pyautogui.keyUp('space')
+            
+            self.prev_r2_pressed = r2_pressed
+            self.prev_a_pressed = a_pressed
+            
+        except Exception as e:
+            print(f"Erro: {e}")
+            self.stop_controller()
         
-        # Verifica os botões R2, R1 e A
-        r2_value = joystick.get_axis(AXIS_RT)
-        r2_pressed = r2_value > 0.5
-        
-        r1_pressed = joystick.get_button(BUTTON_RB)
-        a_pressed = joystick.get_button(BUTTON_A)
-        
-        # R2 pressionado - barra de espaço
-        if r2_pressed and not prev_r2_pressed:
-            pyautogui.keyDown('space')
-        elif not r2_pressed and prev_r2_pressed:
-            pyautogui.keyUp('space')
-        
-        # R1 pressionado - barra de espaço
-        if r1_pressed and not prev_r1_pressed:
-            pyautogui.keyDown('space')
-        elif not r1_pressed and prev_r1_pressed:
-            pyautogui.keyUp('space')
-        
-        # A pressionado - barra de espaço
-        if a_pressed and not prev_a_pressed:
-            pyautogui.keyDown('space')
-        elif not a_pressed and prev_a_pressed:
-            pyautogui.keyUp('space')
-        
-        # Atualiza os estados anteriores
-        prev_r2_pressed = r2_pressed
-        prev_r1_pressed = r1_pressed
-        prev_a_pressed = a_pressed
-        
-        time.sleep(UPDATE_INTERVAL)
+        # Agenda a próxima execução
+        if self.running:
+            self.root.after(int(self.UPDATE_INTERVAL * 1000), self.controller_loop)
+    
+    def on_close(self):
+        self.running = False
+        if messagebox.askokcancel("Sair", "Deseja realmente sair do Slither.io Controller?"):
+            pygame.quit()
+            self.root.destroy()
 
-except Exception as e:
-    print(f"Ocorreu um erro: {e}")
-finally:
-    pygame.quit()
-    print("Programa encerrado.")
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = SlitherControllerApp(root)
