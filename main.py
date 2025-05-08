@@ -40,8 +40,7 @@ class SlitherControllerApp:
         self.AXIS_RT = 5
         
         # Variáveis de estado
-        self.prev_r2_pressed = False
-        self.prev_a_pressed = False
+        self.prev_run_pressed = False
         
         # Centraliza o mouse inicialmente
         self.screen_width, self.screen_height = pyautogui.size()
@@ -180,14 +179,15 @@ Instruções:
             r2_pressed = r2_value > 0.5
             a_pressed = self.joystick.get_button(self.BUTTON_A)
             rb_pressed = self.joystick.get_button(self.BUTTON_RB)
+
+            run_pressed = r2_pressed or a_pressed or rb_pressed
             
-            if (r2_pressed or a_pressed or rb_pressed) and not (self.prev_r2_pressed or self.prev_a_pressed):
+            if (run_pressed) and not (self.prev_run_pressed):
                 pyautogui.keyDown('space')
-            elif not (r2_pressed or a_pressed or rb_pressed) and (self.prev_r2_pressed or self.prev_a_pressed):
+            elif not (run_pressed) and (self.prev_run_pressed):
                 pyautogui.keyUp('space')
             
-            self.prev_r2_pressed = r2_pressed
-            self.prev_a_pressed = a_pressed
+            self.prev_run_pressed = run_pressed
             
         except Exception as e:
             print(f"Erro: {e}")
