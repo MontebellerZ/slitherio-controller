@@ -91,9 +91,9 @@ class SlitherControllerApp:
         
         commands_text = """Controles do Xbox para Slither.io:
 
-- L3 (Analógico Esquerdo): Controla a direção da cobrinha
-- RB, RT e Botão A: Aceleram a cobrinha
-- Botão START: Para a captação dos controles
+• L3 (Analógico esquerdo): Controla a direção da cobrinha
+• RB, RT e Botão A: Aceleram a cobrinha
+• Botão START: Para a captação dos controles
 
 Instruções:
 1. Clique em INICIAR ou pressione START no controle
