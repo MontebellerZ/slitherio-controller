@@ -32,12 +32,14 @@ class SlitherControllerApp:
         
         # Mapeamento de botões
         self.BUTTON_A = 0
+        self.BUTTON_B = 1
         self.BUTTON_RB = 5
         self.BUTTON_START = 7
         self.AXIS_RT = 5
         
         # Variáveis de estado
         self.prev_run_pressed = False
+        self.prev_b_pressed = False 
         
         # Centraliza o mouse inicialmente
         self.screen_width, self.screen_height = pyautogui.size()
@@ -63,7 +65,7 @@ class SlitherControllerApp:
         )
         self.start_button.pack(pady=10)
         
-        # Botão Controles (alterado de "Comandos")
+        # Botão Controles
         self.commands_button = ttk.Button(
             main_frame,
             text="Controles",
@@ -82,20 +84,22 @@ class SlitherControllerApp:
     
     def create_commands_window(self):
         self.commands_window = tk.Toplevel(self.root)
-        self.commands_window.title("Controles do Slither.io")  # Nome alterado
-        self.commands_window.geometry("450x250")  # Altura aumentada para 300
+        self.commands_window.title("Controles do Slither.io")
+        self.commands_window.geometry("450x300")
         
         commands_text = """Controles do Xbox para Slither.io:
 
 • L3 (Analógico esquerdo): Controla a direção da cobrinha
 • RB, RT e Botão A: Aceleram a cobrinha
+• Botão B: Simula pressionar Enter (para iniciar a partida)
 • Botão START: Para a captação dos controles
 
 Instruções:
 1. Clique em INICIAR ou pressione START no controle
 2. Use o analógico para controlar a direção
 3. Use RB/RT/A para acelerar
-4. Pressione START novamente para parar"""
+4. Use B para iniciar a partida (o campo de nick deve estar ativo)
+5. Pressione START novamente para parar"""
         
         commands_label = ttk.Label(
             self.commands_window,
@@ -149,6 +153,7 @@ Instruções:
         self.commands_button.config(state=tk.NORMAL)
         self.status_label.config(text="Pronto para iniciar", foreground="gray")
         pyautogui.keyUp('space')  # Garante que a tecla space seja liberada
+        pyautogui.keyUp('enter')  # Garante que a tecla enter seja liberada
     
     def controller_loop(self):
         if not self.running:
@@ -181,15 +186,23 @@ Instruções:
             r2_pressed = r2_value > 0.5
             a_pressed = self.joystick.get_button(self.BUTTON_A)
             rb_pressed = self.joystick.get_button(self.BUTTON_RB)
-
             run_pressed = r2_pressed or a_pressed or rb_pressed
             
-            if (run_pressed) and not (self.prev_run_pressed):
+            if run_pressed and not self.prev_run_pressed:
                 pyautogui.keyDown('space')
-            elif not (run_pressed) and (self.prev_run_pressed):
+            elif not run_pressed and self.prev_run_pressed:
                 pyautogui.keyUp('space')
             
             self.prev_run_pressed = run_pressed
+            
+            # Botão B para Enter
+            b_pressed = self.joystick.get_button(self.BUTTON_B)
+            if b_pressed and not self.prev_b_pressed:
+                pyautogui.keyDown('enter')
+            elif not b_pressed and self.prev_b_pressed:
+                pyautogui.keyUp('enter')
+            
+            self.prev_b_pressed = b_pressed
             
         except Exception as e:
             print(f"Erro: {e}")
