@@ -1,6 +1,5 @@
 import pygame
 import pyautogui
-import time
 import math
 import tkinter as tk
 from tkinter import ttk, messagebox
