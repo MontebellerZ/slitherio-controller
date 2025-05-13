@@ -41,11 +41,11 @@ class SlitherControllerApp:
         self.prev_run_pressed = False
         self.prev_b_pressed = False 
         
-        # Centraliza o mouse inicialmente
+        # Define o centro da tela para movimentar o mouse
         self.screen_width, self.screen_height = pyautogui.size()
         self.center_x = self.screen_width // 2
         self.center_y = self.screen_height // 2
-        pyautogui.moveTo(self.center_x, self.center_y)
+        # pyautogui.moveTo(self.center_x, self.center_y)
         
         # Inicia o loop principal
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
